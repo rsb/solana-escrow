@@ -25,7 +25,7 @@ impl Processor {
     accounts: &[AccountInfo],
     instruction_data: &[u8],
   ) -> ProgramResult {
-    let instruction = EscrowInstruction::upack(instruction_data)?;
+    let instruction = EscrowInstruction::unpack(instruction_data)?;
 
     match instruction {
       EscrowInstruction::InitEscrow { amount } => {
@@ -61,7 +61,7 @@ impl Processor {
       return Err(EscrowError::NotRentExempt.into());
     }
 
-    let mut escrow_info = Escrow::upack_unchecked(&escrow_account.try_borrow_data()?)?;
+    let mut escrow_info = Escrow::unpack_unchecked(&escrow_account.try_borrow_data()?)?;
     if escrow_info.is_initialized() {
       return Err(ProgramError::AccountAlreadyInitialized);
     }
@@ -69,10 +69,10 @@ impl Processor {
     escrow_info.is_initialized = true;
     escrow_info.initializer_pubkey = *initializer.key;
     escrow_info.temp_token_account_pubkey = *temp_token_account.key;
-    escrow_info.initializer_token_to_recieve_account_pubkey = *token_to_receive_account.key;
+    escrow_info.initializer_token_to_receive_account_pubkey = *token_to_receive_account.key;
     escrow_info.expected_amount = amount;
 
-    Escrow::pack(escrow_info, &mut escrow_account.try_borrow_data()?)?;
+    Escrow::pack(escrow_info, &mut escrow_account.try_borrow_mut_data()?)?;
 
     let (pda, _bump_seed) = Pubkey::find_program_address(&[b"escrow"], program_id);
 
@@ -92,7 +92,7 @@ impl Processor {
       &[
         temp_token_account.clone(),
         initializer.clone(),
-        token_program.with_context(),
+        token_program.clone(),
       ],
     )?;
     Ok(())
